@@ -2,17 +2,24 @@
   <div class="hello" >
     <table class="Table">
       <tr>
-       <th  v-for="(item, index) in columns" v-bind:key="index" v-bind:class="item.class"> {{ item.text }}</th>
+        <th class="th0"> <input type="checkbox" :checked='ischeckBox' @click="changecheck" /></th>
+        <th  v-for="(item, index) in columns" v-bind:key="index" v-bind:class="item.class">
+          {{ item.text }}</th>
       </tr>
-      <tr v-for="(item,index) in arrList" v-bind:key="index" >
-        <td> {{ item.Date }} </td>
-        <td> {{ item.num }}</td>
-        <td> {{ item.Description }} </td>
-        <td> {{ item.Total }} </td>
+      <tr v-for="item in arrList" v-bind:key="item.num">
+        <td><input type="checkbox" :key='item.num' :checked='item.ischecked' v-model="item.ischecked" /></td>
+        <td  @click="listOnclick" > {{ item.Date }}</td>
+        <td  @click="listOnclick" > {{ item.num }}</td>
+        <td  @click="listOnclick" > {{ item.Description }}</td>
+        <td  @click="listOnclick" > {{ item.Total }}</td>
+        <td v-bind:class="{'delete': isdelete, 'textcolor': !isdelete}" @click="deleteItem(item.num)">删除</td>
+      </tr>
+      <tr  v-bind:class="{'delete': checkOnclick, 'textcolor': !checkOnclick}">
+        <td colspan="6" @click="deleteItems">删除</td>
       </tr>
     </table>
     <div class="footer">
-      <ul class="pagination">
+    <ul class="pagination">
         <li @click="addPage('<')" class="pagination_li">&lt;</li>
         <li
         v-for ="n in list"
@@ -63,50 +70,53 @@ export default {
           Date: moment(Date()).format('DD/MM/YYYY'),
           num: 1,
           Description: 'Alpha Bravo Charlie ',
-          Total: 26.00
+          Total: 26.00,
+          ischecked: false
         },
         {
-          Date: moment(Date()).format('DD/MM/YYYY'),
+          Date: '15/02/2021',
           num: 2,
           Description: 'Alpha Bravo Charlie ',
+          ischecked: false,
           Total: 26.00
         },
         {
-          Date: moment(Date()).format('DD/MM/YYYY'),
+          Date: '14/02/2021',
           num: 3,
           Description: 'Alpha Bravo Charlie ',
+          ischecked: false,
           Total: 26.00
         },
         {
-          Date: moment(Date()).format('DD/MM/YYYY'),
+          Date: '13/02/2021',
           num: 4,
           Description: 'Alpha Bravo Charlie ',
+          ischecked: false,
           Total: 26.00
         },
         {
-          Date: moment(Date()).format('DD/MM/YYYY'),
+          Date: '12/02/2021',
           num: 5,
           Description: 'Alpha Bravo Charlie ',
+          ischecked: false,
           Total: 26.00
         }
       ],
+      ischeckBox: false,
+      isdelete: true,
       page: 1,
       list: [1, 2],
       search: '',
       // arrList: [],
-      invalue: { Date: '', num: 0, Description: '', Total: '' },
-      index: 0
+      invalue: { Date: '', num: 0, Description: '', Total: '' }
     }
   },
   computed: {
-    reversedMessage: function () {
-      return (
-        this.msg.split('').reverse().join('')
-      )
-    },
     arrList: function () {
       var list = []
       var count = (this.page - 1) * 5
+      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+      this.arr.sort((a, b) => b.Date.localeCompare(a.Date))
       if (this.search === '') {
         for (var i = count; i < count + 5; i++) {
           if (this.arr[i]) {
@@ -124,6 +134,14 @@ export default {
         }
         return list
       }
+    },
+    checkOnclick: function () {
+      for (var i = 0; i < this.arr.length; i++) {
+        if (this.arr[i].ischecked === true) {
+          return false
+        }
+      }
+      return true
     }
   },
 
@@ -134,18 +152,43 @@ export default {
       }
       this.invalue.Date = moment(this.invalue.Date).format('DD/MM/YYYY')
       this.invalue.num = this.arr[this.arr.length - 1].num + 1
-      this.arr.push(this.invalue)
+      this.arr.push({ ...this.invalue, ischecked: false })
+      this.arr.sort((a, b) => b.Date.localeCompare(a.Date))
+
+      for (var j = 0; j < this.arr.length; j++) {
+        this.arr[j].num = j + 1
+      }
+
       this.invalue = { Date: '', Description: '', num: 0, Total: '' }
     },
 
-    deleteItem (item) {
-      for (var i = 0; i < this.arr.length; i++) {
-        var index = this.arr[i].Description.indexOf(item)
+    listOnclick () {
+      this.isdelete = !this.isdelete
+      if (this.isdelete === false && this.columns.length < 5) {
+        this.columns.push({ text: 'action', class: 'th4' })
       }
-      if (index > 1) {
-        this.arr.splice(index, 1)
+      if (this.isdelete && this.columns.length === 5) {
+        this.columns.pop()
       }
     },
+
+    deleteItem (item) {
+      this.arr.splice(item - 1, 1)
+      for (let i = item - 1; i < this.arr.length; i++) {
+        this.arr[i].num--
+      }
+    },
+    deleteItems () {
+      for (var i = this.arr.length - 1; i >= 0; i--) {
+        if (this.arr[i].ischecked === true) {
+          this.arr.splice(i, 1)
+        }
+      }
+      for (var j = 0; j < this.arr.length; j++) {
+        this.arr[j].num = j + 1
+      }
+    },
+
     addPage (str) {
       if (str === '<' && this.page > 1) {
         this.page--
@@ -175,6 +218,13 @@ export default {
           this.list.push(parseInt(this.arr.length / 5))
           this.list.push(parseInt(this.arr.length / 5) + 1)
         }
+      }
+    },
+    changecheck () {
+      this.ischeckBox = !this.ischeckBox
+      this.isallDelete = !this.isallDelete
+      for (var i = 0; i < this.arr.length; i++) {
+        this.arr[i].ischecked = this.ischeckBox
       }
     }
     // eslint-disable-next-line vue/no-dupe-keys
@@ -233,6 +283,9 @@ tr{
   height: 40px;
   border: 1px solid rgb(222, 222, 222);
 }
+.th0{
+  width: 5%;
+}
 .th1{
   width: 15%;
   font-family: '楷体';
@@ -244,15 +297,26 @@ tr{
   color: rgb(158, 140,133);
 }
 .th3{
-  width: 60%;
+  width: 50%;
   font-family: '楷体';
   color: rgb(158, 140,133);
 }
 .th4{
-  width: 10%;
+  width: 15%;
   font-family: '楷体';
   color: rgb(158, 140,133);
 }
+.delete{
+  display: none;
+}
+.textcolor{
+ cursor: pointer;
+ color: crimson;
+}
+.textcolor:hover{
+  color: coral;
+}
+
 .Table{
   width: 100%;
   border: 2px solid  rgb(214, 214, 214);
